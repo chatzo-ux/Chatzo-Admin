@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chatzo Admin</title>
+<style>
+:root{--g:#25D366;--d:#075E54;--bg:#f2f5f2;--card:#fff;--tx:#17211b;--mu:#5b6b61;--bd:#dde5de;--red:#c62828}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1512;--card:#18211c;--tx:#e8f0ea;--mu:#9bb0a2;--bd:#26342b}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans Bengali",sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+header{background:var(--d);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+header b{font-size:18px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--bd);padding:8px 12px;background:var(--card);color:var(--tx)}
+button.pri{background:var(--d);color:#fff;border-color:var(--d)}
+button.bad{color:var(--red);border-color:var(--red)}
+button.ok{color:var(--d);border-color:var(--d)}
+header button{background:transparent;color:#fff;border-color:#ffffff66}
+input,textarea,select{font:inherit;width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)}
+textarea{min-height:90px}
+.wrap{max-width:760px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+.muted{color:var(--mu);font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1}
+.tabs button.on{background:var(--d);color:#fff;border-color:var(--d)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px;text-align:center}
+.stats div{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px 2px;font-size:12px;color:var(--mu)}
+.stats b{display:block;font-size:18px;color:var(--tx)}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;color:#fff}
+.s-active{background:#2e7d32}.s-banned{background:#c62828}.s-rejected{background:#ef6c00}.s-deleted{background:#546e7a}
+.err{color:var(--red);font-size:14px;min-height:20px}
+#loginView{max-width:380px;margin:12vh auto;padding:16px}
+#loginView h1{color:var(--d);margin:0 0 4px}
+.stack>*{margin-bottom:10px}
+.name{font-weight:600;font-size:16px}
+.note{font-size:12px;color:var(--mu);margin-top:8px}
+</style>
+</head>
+<body>
+
+<div id="loginView" class="stack">
+  <h1>Chatzo Admin</h1>
+  <div class="muted">শুধু অ্যাডমিনদের জন্য</div>
+  <input id="email" type="email" placeholder="ইমেইল" autocomplete="username">
+  <input id="password" type="password" placeholder="পাসওয়ার্ড" autocomplete="current-password">
+  <div id="loginErr" class="err"></div>
+  <button id="loginBtn" class="pri" style="width:100%">লগইন</button>
+</div>
+
+<div id="appView" hidden>
+  <header><b>Chatzo Admin</b><button id="logoutBtn">লগআউট</button></header>
+  <div class="wrap">
+    <div class="tabs">
+      <button data-tab="users" class="on">ইউজার</button>
+      <button data-tab="notices">নোটিশ</button>
+      <button data-tab="tickets">Support</button>
+    </div>
+
+    <section id="tab-users">
+      <div class="stats" id="stats"></div>
+      <div class="row" style="margin-bottom:10px">
+        <input id="search" placeholder="নাম, ইমেইল বা নম্বর খুঁজুন" style="flex:2;min-width:160px">
+        <select id="filter" style="flex:1;min-width:110px">
+          <option value="all">সব</option>
+          <option value="active">সক্রিয়</option>
+          <option value="banned">ব্যান</option>
+          <option value="rejected">প্রত্যাখ্যাত</option>
+          <option value="deleted">মুছে ফেলা</option>
+        </select>
+      </div>
+      <div id="usersErr" class="err"></div>
+      <div id="userList"></div>
+    </section>
+
+    <section id="tab-notices" hidden>
+      <div class="card stack">
+        <div class="name">নতুন নোটিশ</div>
+        <input id="nTitle" placeholder="শিরোনাম">
+        <textarea id="nBody" placeholder="বিস্তারিত লিখুন"></textarea>
+        <button id="nSend" class="pri">সবার কাছে পাঠান</button>
+        <div id="nErr" class="err"></div>
+      </div>
+      <div id="noticeList"></div>
+    </section>
+
+    <section id="tab-tickets" hidden>
+      <div id="ticketsErr" class="err"></div>
+      <div id="ticketList"></div>
+    </section>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDn11HfbtTJlfQMTC3OLFVH5XQnBWa0aXk",
+  authDomain: "chatzo-8a3d6.firebaseapp.com",
+  projectId: "chatzo-8a3d6",
+  storageBucket: "chatzo-8a3d6.firebasestorage.app",
+  messagingSenderId: "257350522365",
+  appId: "1:257350522365:web:8352f08e14b79e69637594"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const ts = firebase.firestore.FieldValue.serverTimestamp;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (t) => (t && t.toDate) ? t.toDate().toLocaleString('bn-BD') : '';
+const LABEL = {active:'সক্রিয়', banned:'ব্যান', rejected:'প্রত্যাখ্যাত', deleted:'মুছে ফেলা'};
+
+let users = [], unsubs = [];
+
+// ---------- লগইন ----------
+function loginError(e) {
+  const c = e && e.code;
+  if (c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found' || c === 'auth/invalid-email')
+    return 'ইমেইল বা পাসওয়ার্ড ভুল।';
+  if (c === 'auth/too-many-requests') return 'অনেকবার চেষ্টা হয়েছে, কিছুক্ষণ পরে আবার চেষ্টা করুন।';
+  if (c === 'auth/network-request-failed') return 'ইন্টারনেট সংযোগ চেক করুন।';
+  return 'লগইন করা যায়নি (' + (c || 'error') + ')';
+}
+
+$('loginBtn').onclick = async () => {
+  $('loginErr').textContent = '';
+  const em = $('email').value.trim(), pw = $('password').value;
+  if (!em || !pw) { $('loginErr').textContent = 'ইমেইল ও পাসওয়ার্ড দিন।'; return; }
+  $('loginBtn').disabled = true;
+  try { await auth.signInWithEmailAndPassword(em, pw); }
+  catch (e) { $('loginErr').textContent = loginError(e); }
+  $('loginBtn').disabled = false;
+};
+$('password').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
+$('logoutBtn').onclick = () => auth.signOut();
+
+auth.onAuthStateChanged(async (user) => {
+  unsubs.forEach((u) => u()); unsubs = [];
+  if (!user) { $('appView').hidden = true; $('loginView').hidden = false; return; }
+  try {
+    const a = await db.collection('admins').doc(user.uid).get();
+    if (!a.exists) {
+      await auth.signOut();
+      $('loginErr').textContent = 'এই অ্যাকাউন্ট অ্যাডমিন নয়।';
+      return;
+    }
+  } catch (e) {
+    await auth.signOut();
+    $('loginErr').textContent = 'অ্যাডমিন যাচাই করা যায়নি (' + (e.code || 'error') + ')';
+    return;
+  }
+  $('loginView').hidden = true; $('appView').hidden = false;
+  startListeners();
+});
+
+// ---------- ট্যাব ----------
+document.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => {
+  document.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+  ['users', 'notices', 'tickets'].forEach((t) => $('tab-' + t).hidden = (t !== b.dataset.tab));
+});
+
+// ---------- লাইভ ডেটা ----------
+function startListeners() {
+  unsubs.push(db.collection('users').orderBy('createdAt', 'desc').limit(500).onSnapshot((s) => {
+    $('usersErr').textContent = '';
+    users = s.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+    renderUsers();
+  }, (e) => { $('usersErr').textContent = 'ইউজার লোড করা যায়নি (' + e.code + ')'; }));
+
+  unsubs.push(db.collection('notices').orderBy('createdAt', 'desc').limit(100).onSnapshot((s) => {
+    $('noticeList').innerHTML = s.docs.map((d) => {
+      const n = d.data();
+      return '<div class="card"><div class="name">' + esc(n.title) + '</div>' +
+        '<div>' + esc(n.body) + '</div><div class="muted">' + esc(fmt(n.createdAt)) + '</div>' +
+        '<div class="row" style="margin-top:8px"><button class="bad" data-del-notice="' + esc(d.id) + '">মুছুন</button></div></div>';
+    }).join('') || '<p class="muted">কোনো নোটিশ নেই।</p>';
+  }, (e) => { $('nErr').textContent = 'নোটিশ লোড করা যায়নি (' + e.code + ')'; }));
+
+  unsubs.push(db.collection('supportTickets').orderBy('createdAt', 'desc').limit(200).onSnapshot((s) => {
+    $('ticketsErr').textContent = '';
+    $('ticketList').innerHTML = s.docs.map((d) => {
+      const t = d.data();
+      const done = t.status === 'resolved';
+      return '<div class="card"><div class="name">' + esc(t.name) + (done ? ' ✅' : '') + '</div>' +
+        '<div class="muted">' + esc(t.email) + ' · ' + esc(t.phone) + '</div>' +
+        '<div style="margin:6px 0">' + esc(t.message || t.problem) + '</div>' +
+        '<div class="muted">' + esc(fmt(t.createdAt)) + '</div>' +
+        '<div class="row" style="margin-top:8px">' +
+        (done ? '' : '<button class="ok" data-resolve="' + esc(d.id) + '">সমাধান হয়েছে</button>') +
+        '<button class="bad" data-del-ticket="' + esc(d.id) + '">মুছুন</button></div></div>';
+    }).join('') || '<p class="muted">কোনো Support মেসেজ নেই।</p>';
+  }, (e) => { $('ticketsErr').textContent = 'Support লোড করা যায়নি (' + e.code + ')'; }));
+}
+
+// ---------- ইউজার তালিকা ----------
+function buttonsFor(u) {
+  const b = (act, text, cls) => '<button class="' + cls + '" data-act="' + act + '" data-id="' + esc(u.id) + '">' + text + '</button>';
+  switch (u.status) {
+    case 'banned': return b('active', 'আনব্যান', 'ok') + b('deleted', 'মুছুন', 'bad');
+    case 'rejected': return b('active', 'অনুমোদন', 'ok') + b('deleted', 'মুছুন', 'bad');
+    case 'deleted': return b('active', 'ফিরিয়ে আনুন', 'ok') + b('hard', 'স্থায়ীভাবে মুছুন', 'bad');
+    default: return b('banned', 'ব্যান', 'bad') + b('rejected', 'প্রত্যাখ্যান', 'bad') + b('deleted', 'মুছুন', 'bad');
+  }
+}
+
+function renderUsers() {
+  const count = { active: 0, banned: 0, rejected: 0, deleted: 0 };
+  users.forEach((u) => { if (count[u.status] != null) count[u.status]++; });
+  $('stats').innerHTML = '<div><b>' + users.length + '</b>মোট</div>' +
+    ['active', 'banned', 'rejected', 'deleted'].map((k) => '<div><b>' + count[k] + '</b>' + LABEL[k] + '</div>').join('');
+
+  const q = $('search').value.trim().toLowerCase(), f = $('filter').value;
+  const list = users.filter((u) =>
+    (f === 'all' || u.status === f) &&
+    (!q || [u.firstName, u.lastName, u.email, u.phone].join(' ').toLowerCase().includes(q)));
+
+  $('userList').innerHTML = list.map((u) =>
+    '<div class="card"><div class="row" style="justify-content:space-between">' +
+    '<div class="name">' + esc((u.firstName || '') + ' ' + (u.lastName || '')) + '</div>' +
+    '<span class="badge s-' + esc(u.status) + '">' + esc(LABEL[u.status] || u.status) + '</span></div>' +
+    '<div class="muted">' + esc(u.email) + '</div><div class="muted">' + esc(u.phone) + '</div>' +
+    '<div class="muted">যোগ: ' + esc(fmt(u.createdAt)) + '</div>' +
+    '<div class="row" style="margin-top:8px">' + buttonsFor(u) + '</div>' +
+    (u.status === 'deleted' ? '<div class="note">স্থায়ীভাবে মুছলেও Firebase Console → Authentication থেকে এই ইমেইলের অ্যাকাউন্টটাও মুছতে হবে, নাহলে সে আবার প্রোফাইল বানাতে পারবে।</div>' : '') +
+    '</div>').join('') || '<p class="muted">কোনো ইউজার পাওয়া যায়নি।</p>';
+}
+$('search').oninput = renderUsers;
+$('filter').onchange = renderUsers;
+
+async function setStatus(id, status) {
+  const u = users.find((x) => x.id === id);
+  const name = u ? ((u.firstName || '') + ' ' + (u.lastName || '')).trim() : id;
+  if (!confirm(name + ' — স্ট্যাটাস বদলে "' + LABEL[status] + '" করবেন?')) return;
+  try { await db.collection('users').doc(id).update({ status: status, statusUpdatedAt: ts() }); }
+  catch (e) { alert('করা যায়নি (' + e.code + ')'); }
+}
+
+async function hardDelete(id) {
+  const u = users.find((x) => x.id === id);
+  if (!u) return;
+  if (!confirm('এই ইউজারের প্রোফাইল চিরতরে মুছে যাবে, আর ফেরানো যাবে না। চালিয়ে যাবেন?')) return;
+  if (!confirm('শেষবার নিশ্চিত করুন: ' + (u.firstName || '') + ' ' + (u.lastName || '') + ' মুছবেন?')) return;
+  try {
+    const batch = db.batch();
+    batch.delete(db.collection('users').doc(id));
+    if (u.phone) batch.delete(db.collection('phoneIndex').doc(u.phone));
+    await batch.commit();
+  } catch (e) { alert('করা যায়নি (' + e.code + ')'); }
+}
+
+$('userList').onclick = (e) => {
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  if (b.dataset.act === 'hard') hardDelete(b.dataset.id);
+  else setStatus(b.dataset.id, b.dataset.act);
+};
+
+// ---------- নোটিশ ----------
+$('nSend').onclick = async () => {
+  $('nErr').textContent = '';
+  const title = $('nTitle').value.trim(), body = $('nBody').value.trim();
+  if (!title || !body) { $('nErr').textContent = 'শিরোনাম ও বিস্তারিত দুটোই লিখুন।'; return; }
+  $('nSend').disabled = true;
+  try {
+    await db.collection('notices').add({ title: title, body: body, createdAt: ts() });
+    $('nTitle').value = ''; $('nBody').value = '';
+  } catch (e) { $('nErr').textContent = 'পাঠানো যায়নি (' + e.code + ')'; }
+  $('nSend').disabled = false;
+};
+
+$('noticeList').onclick = async (e) => {
+  const b = e.target.closest('button[data-del-notice]');
+  if (!b || !confirm('এই নোটিশ মুছবেন?')) return;
+  try { await db.collection('notices').doc(b.dataset.delNotice).delete(); }
+  catch (err) { alert('করা যায়নি (' + err.code + ')'); }
+};
+
+// ---------- Support ----------
+$('ticketList').onclick = async (e) => {
+  const r = e.target.closest('button[data-resolve]');
+  const d = e.target.closest('button[data-del-ticket]');
+  try {
+    if (r) await db.collection('supportTickets').doc(r.dataset.resolve).update({ status: 'resolved' });
+    if (d && confirm('এই মেসেজ মুছবেন?')) await db.collection('supportTickets').doc(d.dataset.delTicket).delete();
+  } catch (err) { alert('করা যায়নি (' + err.code + ')'); }
+};
+</script>
+</body>
+  </html>
