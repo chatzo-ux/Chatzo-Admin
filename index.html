@@ -13,30 +13,37 @@ body{margin:0;font-family:system-ui,-apple-system,"Noto Sans Bengali",sans-serif
 header{background:var(--d);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
 header b{font-size:18px}
 button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--bd);padding:8px 12px;background:var(--card);color:var(--tx)}
+button:disabled{opacity:.6;cursor:default}
 button.pri{background:var(--d);color:#fff;border-color:var(--d)}
 button.bad{color:var(--red);border-color:var(--red)}
 button.ok{color:var(--d);border-color:var(--d)}
 header button{background:transparent;color:#fff;border-color:#ffffff66}
 input,textarea,select{font:inherit;width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)}
-textarea{min-height:90px}
+textarea{min-height:110px}
+label{display:block;font-size:13px;color:var(--mu);margin:8px 0 4px}
 .wrap{max-width:760px;margin:0 auto;padding:14px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
 .muted{color:var(--mu);font-size:14px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .tabs{display:flex;gap:6px;margin-bottom:12px}
-.tabs button{flex:1}
+.tabs button{flex:1;padding:8px 4px}
 .tabs button.on{background:var(--d);color:#fff;border-color:var(--d)}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px;text-align:center}
-.stats div{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px 2px;font-size:12px;color:var(--mu)}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:12px;text-align:center}
+.stats div{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px 2px;font-size:11px;color:var(--mu)}
 .stats b{display:block;font-size:18px;color:var(--tx)}
 .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;color:#fff}
 .s-active{background:#2e7d32}.s-banned{background:#c62828}.s-rejected{background:#ef6c00}.s-deleted{background:#546e7a}
 .err{color:var(--red);font-size:14px;min-height:20px}
+.okmsg{color:#2e7d32;font-size:14px;min-height:20px}
 #loginView{max-width:380px;margin:12vh auto;padding:16px}
 #loginView h1{color:var(--d);margin:0 0 4px}
 .stack>*{margin-bottom:10px}
 .name{font-weight:600;font-size:16px}
 .note{font-size:12px;color:var(--mu);margin-top:8px}
+.pres{font-size:13px;font-weight:600}
+.pres.on{color:#2e7d32}
+.pres.off{color:var(--mu);font-weight:400}
+h3{margin:14px 0 4px;color:var(--d)}
 </style>
 </head>
 <body>
@@ -57,14 +64,36 @@ textarea{min-height:90px}
       <button data-tab="users" class="on">ইউজার</button>
       <button data-tab="notices">নোটিশ</button>
       <button data-tab="tickets">Support</button>
+      <button data-tab="config">অ্যাপ</button>
     </div>
 
     <section id="tab-users">
       <div class="stats" id="stats"></div>
       <div class="row" style="margin-bottom:10px">
+        <button id="toggleCreate" class="pri">+ নতুন ইউজার</button>
+      </div>
+
+      <div id="createCard" class="card" hidden>
+        <div class="name">ইউজারের জন্য অ্যাকাউন্ট খুলুন</div>
+        <label>প্রথম নাম</label><input id="cFirst">
+        <label>শেষ নাম</label><input id="cLast">
+        <label>ইমেইল</label><input id="cEmail" type="email">
+        <label>মোবাইল নম্বর (01XXXXXXXXX)</label><input id="cPhone" type="tel">
+        <label>পাসওয়ার্ড (কমপক্ষে ৮ অক্ষর)</label><input id="cPass" type="text" autocomplete="off">
+        <div class="note">অ্যাকাউন্ট খোলার পর ইউজারকে ইমেইল ও এই পাসওয়ার্ড জানান। সে লগইন করে সেটিংস থেকে পাসওয়ার্ড বদলে নেবে।</div>
+        <div class="row" style="margin-top:10px">
+          <button id="cSave" class="pri">অ্যাকাউন্ট খুলুন</button>
+          <button id="cCancel">বাতিল</button>
+        </div>
+        <div id="cErr" class="err"></div>
+        <div id="cOk" class="okmsg"></div>
+      </div>
+
+      <div class="row" style="margin-bottom:10px">
         <input id="search" placeholder="নাম, ইমেইল বা নম্বর খুঁজুন" style="flex:2;min-width:160px">
         <select id="filter" style="flex:1;min-width:110px">
           <option value="all">সব</option>
+          <option value="online">অনলাইন</option>
           <option value="active">সক্রিয়</option>
           <option value="banned">ব্যান</option>
           <option value="rejected">প্রত্যাখ্যাত</option>
@@ -89,6 +118,26 @@ textarea{min-height:90px}
     <section id="tab-tickets" hidden>
       <div id="ticketsErr" class="err"></div>
       <div id="ticketList"></div>
+    </section>
+
+    <section id="tab-config" hidden>
+      <div class="card">
+        <h3 style="margin-top:0">About Chatzo-র লেখা</h3>
+        <div class="muted">ফাঁকা রাখলে অ্যাপের নিজস্ব ডিফল্ট লেখা দেখাবে।</div>
+        <label>ইংরেজি</label><textarea id="aboutEn"></textarea>
+        <label>বাংলা</label><textarea id="aboutBn"></textarea>
+
+        <h3>অ্যাপ আপডেট</h3>
+        <div class="muted">নতুন ভার্সন নম্বর ইউজারের অ্যাপের ভার্সনের চেয়ে বড় হলে অ্যাপে "Update available" পপআপ আসবে। (অ্যাপের পপআপ কোড পরের ধাপে বসবে।)</div>
+        <label>সর্বশেষ বিল্ড নম্বর (যেমন 12)</label><input id="latestBuild" type="number" min="0">
+        <label>ডাউনলোড লিংক</label><input id="updateUrl" type="url" placeholder="https://...">
+        <label>পপআপের বার্তা</label><input id="updateMessage" placeholder="নতুন আপডেট এসেছে">
+        <label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input id="forceUpdate" type="checkbox" style="width:auto"> আপডেট বাধ্যতামূলক</label>
+
+        <div class="row" style="margin-top:12px"><button id="cfgSave" class="pri">সংরক্ষণ করুন</button></div>
+        <div id="cfgErr" class="err"></div>
+        <div id="cfgOk" class="okmsg"></div>
+      </div>
     </section>
   </div>
 </div>
@@ -116,7 +165,26 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
 const fmt = (t) => (t && t.toDate) ? t.toDate().toLocaleString('bn-BD') : '';
 const LABEL = {active:'সক্রিয়', banned:'ব্যান', rejected:'প্রত্যাখ্যাত', deleted:'মুছে ফেলা'};
 
-let users = [], unsubs = [];
+let users = [], presence = {}, unsubs = [], cfgDirty = false;
+
+// ---------- সময়/অনলাইন ----------
+function bn(n) { return String(n).replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d]); }
+function agoText(date) {
+  const m = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (m < 1) return 'এইমাত্র';
+  if (m < 60) return bn(m) + ' মিনিট আগে';
+  const h = Math.floor(m / 60);
+  if (h < 24) return bn(h) + ' ঘণ্টা আগে';
+  return bn(Math.floor(h / 24)) + ' দিন আগে';
+}
+function presenceOf(uid) {
+  const p = presence[uid];
+  if (!p) return { online: false, text: 'কখনো অ্যাপ খোলেনি' };
+  const seen = p.lastSeen && p.lastSeen.toDate ? p.lastSeen.toDate() : null;
+  const fresh = seen && (Date.now() - seen.getTime()) <= 75000;
+  if (p.online === true && fresh) return { online: true, text: 'Online' };
+  return { online: false, text: seen ? 'Offline · ' + agoText(seen) : 'Offline' };
+}
 
 // ---------- লগইন ----------
 function loginError(e) {
@@ -162,7 +230,7 @@ auth.onAuthStateChanged(async (user) => {
 // ---------- ট্যাব ----------
 document.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => {
   document.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
-  ['users', 'notices', 'tickets'].forEach((t) => $('tab-' + t).hidden = (t !== b.dataset.tab));
+  ['users', 'notices', 'tickets', 'config'].forEach((t) => $('tab-' + t).hidden = (t !== b.dataset.tab));
 });
 
 // ---------- লাইভ ডেটা ----------
@@ -172,6 +240,14 @@ function startListeners() {
     users = s.docs.map((d) => Object.assign({ id: d.id }, d.data()));
     renderUsers();
   }, (e) => { $('usersErr').textContent = 'ইউজার লোড করা যায়নি (' + e.code + ')'; }));
+
+  unsubs.push(db.collection('presence').onSnapshot((s) => {
+    presence = {};
+    s.docs.forEach((d) => { presence[d.id] = d.data(); });
+    renderUsers();
+  }, () => {}));
+  const tick = setInterval(renderUsers, 30000);
+  unsubs.push(() => clearInterval(tick));
 
   unsubs.push(db.collection('notices').orderBy('createdAt', 'desc').limit(100).onSnapshot((s) => {
     $('noticeList').innerHTML = s.docs.map((d) => {
@@ -196,39 +272,57 @@ function startListeners() {
         '<button class="bad" data-del-ticket="' + esc(d.id) + '">মুছুন</button></div></div>';
     }).join('') || '<p class="muted">কোনো Support মেসেজ নেই।</p>';
   }, (e) => { $('ticketsErr').textContent = 'Support লোড করা যায়নি (' + e.code + ')'; }));
+
+  unsubs.push(db.collection('appConfig').doc('main').onSnapshot((d) => {
+    if (cfgDirty) return;
+    const c = d.exists ? d.data() : {};
+    $('aboutEn').value = c.aboutEn || '';
+    $('aboutBn').value = c.aboutBn || '';
+    $('latestBuild').value = c.latestBuild != null ? c.latestBuild : '';
+    $('updateUrl').value = c.updateUrl || '';
+    $('updateMessage').value = c.updateMessage || '';
+    $('forceUpdate').checked = c.forceUpdate === true;
+  }, () => {}));
 }
 
 // ---------- ইউজার তালিকা ----------
 function buttonsFor(u) {
   const b = (act, text, cls) => '<button class="' + cls + '" data-act="' + act + '" data-id="' + esc(u.id) + '">' + text + '</button>';
+  const reset = '<button data-reset="' + esc(u.email) + '">পাসওয়ার্ড রিসেট লিংক</button>';
   switch (u.status) {
-    case 'banned': return b('active', 'আনব্যান', 'ok') + b('deleted', 'মুছুন', 'bad');
-    case 'rejected': return b('active', 'অনুমোদন', 'ok') + b('deleted', 'মুছুন', 'bad');
+    case 'banned': return b('active', 'আনব্যান', 'ok') + b('deleted', 'মুছুন', 'bad') + reset;
+    case 'rejected': return b('active', 'অনুমোদন', 'ok') + b('deleted', 'মুছুন', 'bad') + reset;
     case 'deleted': return b('active', 'ফিরিয়ে আনুন', 'ok') + b('hard', 'স্থায়ীভাবে মুছুন', 'bad');
-    default: return b('banned', 'ব্যান', 'bad') + b('rejected', 'প্রত্যাখ্যান', 'bad') + b('deleted', 'মুছুন', 'bad');
+    default: return b('banned', 'ব্যান', 'bad') + b('rejected', 'প্রত্যাখ্যান', 'bad') + b('deleted', 'মুছুন', 'bad') + reset;
   }
 }
 
 function renderUsers() {
-  const count = { active: 0, banned: 0, rejected: 0, deleted: 0 };
-  users.forEach((u) => { if (count[u.status] != null) count[u.status]++; });
-  $('stats').innerHTML = '<div><b>' + users.length + '</b>মোট</div>' +
+  const count = { active: 0, banned: 0, rejected: 0, deleted: 0, online: 0 };
+  users.forEach((u) => {
+    if (count[u.status] != null) count[u.status]++;
+    if (presenceOf(u.id).online) count.online++;
+  });
+  $('stats').innerHTML = '<div><b>' + users.length + '</b>মোট</div><div><b>' + count.online + '</b>অনলাইন</div>' +
     ['active', 'banned', 'rejected', 'deleted'].map((k) => '<div><b>' + count[k] + '</b>' + LABEL[k] + '</div>').join('');
 
   const q = $('search').value.trim().toLowerCase(), f = $('filter').value;
   const list = users.filter((u) =>
-    (f === 'all' || u.status === f) &&
+    (f === 'all' || (f === 'online' ? presenceOf(u.id).online : u.status === f)) &&
     (!q || [u.firstName, u.lastName, u.email, u.phone].join(' ').toLowerCase().includes(q)));
 
-  $('userList').innerHTML = list.map((u) =>
-    '<div class="card"><div class="row" style="justify-content:space-between">' +
-    '<div class="name">' + esc((u.firstName || '') + ' ' + (u.lastName || '')) + '</div>' +
-    '<span class="badge s-' + esc(u.status) + '">' + esc(LABEL[u.status] || u.status) + '</span></div>' +
-    '<div class="muted">' + esc(u.email) + '</div><div class="muted">' + esc(u.phone) + '</div>' +
-    '<div class="muted">যোগ: ' + esc(fmt(u.createdAt)) + '</div>' +
-    '<div class="row" style="margin-top:8px">' + buttonsFor(u) + '</div>' +
-    (u.status === 'deleted' ? '<div class="note">স্থায়ীভাবে মুছলেও Firebase Console → Authentication থেকে এই ইমেইলের অ্যাকাউন্টটাও মুছতে হবে, নাহলে সে আবার প্রোফাইল বানাতে পারবে।</div>' : '') +
-    '</div>').join('') || '<p class="muted">কোনো ইউজার পাওয়া যায়নি।</p>';
+  $('userList').innerHTML = list.map((u) => {
+    const p = presenceOf(u.id);
+    return '<div class="card"><div class="row" style="justify-content:space-between">' +
+      '<div class="name">' + esc((u.firstName || '') + ' ' + (u.lastName || '')) + '</div>' +
+      '<span class="badge s-' + esc(u.status) + '">' + esc(LABEL[u.status] || u.status) + '</span></div>' +
+      '<div class="pres ' + (p.online ? 'on' : 'off') + '">' + esc(p.text) + '</div>' +
+      '<div class="muted">' + esc(u.email) + '</div><div class="muted">' + esc(u.phone) + '</div>' +
+      '<div class="muted">যোগ: ' + esc(fmt(u.createdAt)) + (u.adminCreated ? ' (অ্যাডমিন খুলে দিয়েছে)' : '') + '</div>' +
+      '<div class="row" style="margin-top:8px">' + buttonsFor(u) + '</div>' +
+      (u.status === 'deleted' ? '<div class="note">স্থায়ীভাবে মুছলেও Firebase Console → Authentication থেকে এই ইমেইলের অ্যাকাউন্টটাও মুছতে হবে, নাহলে সে আবার প্রোফাইল বানাতে পারবে।</div>' : '') +
+      '</div>';
+  }).join('') || '<p class="muted">কোনো ইউজার পাওয়া যায়নি।</p>';
 }
 $('search').oninput = renderUsers;
 $('filter').onchange = renderUsers;
@@ -254,42 +348,59 @@ async function hardDelete(id) {
   } catch (e) { alert('করা যায়নি (' + e.code + ')'); }
 }
 
-$('userList').onclick = (e) => {
+$('userList').onclick = async (e) => {
+  const r = e.target.closest('button[data-reset]');
+  if (r) {
+    const em = r.dataset.reset;
+    if (!em || !confirm(em + ' ঠিকানায় পাসওয়ার্ড রিসেটের লিংক পাঠাবেন?')) return;
+    try { await auth.sendPasswordResetEmail(em); alert('লিংক পাঠানো হয়েছে।'); }
+    catch (err) { alert('পাঠানো যায়নি (' + (err.code || 'error') + ')'); }
+    return;
+  }
   const b = e.target.closest('button[data-act]');
   if (!b) return;
   if (b.dataset.act === 'hard') hardDelete(b.dataset.id);
   else setStatus(b.dataset.id, b.dataset.act);
 };
 
-// ---------- নোটিশ ----------
-$('nSend').onclick = async () => {
-  $('nErr').textContent = '';
-  const title = $('nTitle').value.trim(), body = $('nBody').value.trim();
-  if (!title || !body) { $('nErr').textContent = 'শিরোনাম ও বিস্তারিত দুটোই লিখুন।'; return; }
-  $('nSend').disabled = true;
-  try {
-    await db.collection('notices').add({ title: title, body: body, createdAt: ts() });
-    $('nTitle').value = ''; $('nBody').value = '';
-  } catch (e) { $('nErr').textContent = 'পাঠানো যায়নি (' + e.code + ')'; }
-  $('nSend').disabled = false;
-};
+// ---------- ইউজারের জন্য অ্যাকাউন্ট খোলা ----------
+function normalizeBdPhone(input) {
+  let p = String(input).replace(/[\s\-()]/g, '');
+  if (p.startsWith('+880')) p = p.substring(1);
+  else if (p.startsWith('880')) { /* ঠিক আছে */ }
+  else if (p.startsWith('0')) p = '88' + p;
+  else return null;
+  p = '+' + p;
+  return /^\+8801[3-9]\d{8}$/.test(p) ? p : null;
+}
 
-$('noticeList').onclick = async (e) => {
-  const b = e.target.closest('button[data-del-notice]');
-  if (!b || !confirm('এই নোটিশ মুছবেন?')) return;
-  try { await db.collection('notices').doc(b.dataset.delNotice).delete(); }
-  catch (err) { alert('করা যায়নি (' + err.code + ')'); }
-};
+$('toggleCreate').onclick = () => { $('createCard').hidden = !$('createCard').hidden; };
+$('cCancel').onclick = () => { $('createCard').hidden = true; };
 
-// ---------- Support ----------
-$('ticketList').onclick = async (e) => {
-  const r = e.target.closest('button[data-resolve]');
-  const d = e.target.closest('button[data-del-ticket]');
+$('cSave').onclick = async () => {
+  $('cErr').textContent = ''; $('cOk').textContent = '';
+  const first = $('cFirst').value.trim(), last = $('cLast').value.trim();
+  const email = $('cEmail').value.trim(), pass = $('cPass').value;
+  const phone = normalizeBdPhone($('cPhone').value);
+  if (!first || !last) { $('cErr').textContent = 'প্রথম ও শেষ নাম দিন।'; return; }
+  if (!email.includes('@')) { $('cErr').textContent = 'সঠিক ইমেইল দিন।'; return; }
+  if (!phone) { $('cErr').textContent = 'সঠিক বাংলাদেশি নম্বর দিন।'; return; }
+  if (pass.length < 8) { $('cErr').textContent = 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।'; return; }
+  $('cSave').disabled = true;
+  let uid = null;
   try {
-    if (r) await db.collection('supportTickets').doc(r.dataset.resolve).update({ status: 'resolved' });
-    if (d && confirm('এই মেসেজ মুছবেন?')) await db.collection('supportTickets').doc(d.dataset.delTicket).delete();
-  } catch (err) { alert('করা যায়নি (' + err.code + ')'); }
-};
-</script>
-</body>
-  </html>
+    const taken = await db.collection('phoneIndex').doc(phone).get();
+    if (taken.exists) { $('cErr').textContent = 'এই নম্বরে আগেই অ্যাকাউন্ট আছে।'; $('cSave').disabled = false; return; }
+    const sec = firebase.apps.find((a) => a.name === 'secondary') || firebase.initializeApp(firebaseConfig, 'secondary');
+    const cred = await sec.auth().createUserWithEmailAndPassword(email, pass);
+    uid = cred.user.uid;
+    await sec.auth().signOut();
+    const batch = db.batch();
+    batch.set(db.collection('users').doc(uid), {
+      firstName: first, lastName: last, email: email, phone: phone,
+      status: 'active', adminCreated: true, createdAt: ts()
+    });
+    batch.set(db.collection('phoneIndex').doc(phone), { uid: uid, name: first + ' ' + last });
+    await batch.commit();
+    $('cOk').textContent = 'অ্যাকাউন্ট খোলা হয়েছে: ' + email;
+    ['cFirst', 'cLast', 'cEmail', 'cPhone', 'cPass'].forEach((id) => { $(i
