@@ -64,6 +64,7 @@ h3{margin:14px 0 4px;color:var(--d)}
       <button data-tab="users" class="on">ইউজার</button>
       <button data-tab="notices">নোটিশ</button>
       <button data-tab="tickets">Support</button>
+      <button data-tab="reports">রিপোর্ট</button>
       <button data-tab="config">অ্যাপ</button>
     </div>
 
@@ -120,6 +121,11 @@ h3{margin:14px 0 4px;color:var(--d)}
       <div id="ticketList"></div>
     </section>
 
+    <section id="tab-reports" hidden>
+      <div id="reportsErr" class="err"></div>
+      <div id="reportList"></div>
+    </section>
+
     <section id="tab-config" hidden>
       <div class="card">
         <h3 style="margin-top:0">About Chatzo-র লেখা</h3>
@@ -128,7 +134,7 @@ h3{margin:14px 0 4px;color:var(--d)}
         <label>বাংলা</label><textarea id="aboutBn"></textarea>
 
         <h3>অ্যাপ আপডেট</h3>
-        <div class="muted">নতুন ভার্সন নম্বর ইউজারের অ্যাপের ভার্সনের চেয়ে বড় হলে অ্যাপে "Update available" পপআপ আসবে। (অ্যাপের পপআপ কোড পরের ধাপে বসবে।)</div>
+        <div class="muted">নতুন ভার্সন নম্বর ইউজারের অ্যাপের ভার্সনের চেয়ে বড় হলে অ্যাপে "Update available" পপআপ আসবে।</div>
         <label>সর্বশেষ বিল্ড নম্বর (যেমন 12)</label><input id="latestBuild" type="number" min="0">
         <label>ডাউনলোড লিংক</label><input id="updateUrl" type="url" placeholder="https://...">
         <label>পপআপের বার্তা</label><input id="updateMessage" placeholder="নতুন আপডেট এসেছে">
@@ -147,5 +153,6 @@ h3{margin:14px 0 4px;color:var(--d)}
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="app.js?v=3"></script>
 <script src="app2.js?v=3"></script>
+<script src="app3.js?v=1"></script>
 </body>
 </html>
